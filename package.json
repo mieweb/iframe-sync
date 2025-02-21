@@ -1,0 +1,12 @@
+{
+  "name": "iframe-sync",
+  "version": "1.0.0",
+  "description": "Simple state synchronization between related IFrames",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Medical Informatics, Engineering",
+  "license": "ISC"
+}
