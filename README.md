@@ -4,7 +4,7 @@ Simple state synchronization between related IFrames.
 
 ## Overview
 
-`iframe-sync` is a lightweight JavaScript library that enables state synchronization between related IFrames. It allows you to easily share and update state across multiple windows, ensuring that all participants stay in sync.
+`iframe-sync` is a lightweight JavaScript library with no dependencies that enables state synchronization between related IFrames. It allows you to easily share and update state across multiple windows, ensuring that all participants stay in sync.
 
 ## Installation
 
