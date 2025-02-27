@@ -17,6 +17,9 @@ class IframeSyncClient {
         this.#channel = 'IframeSync';
         this.#clientName = clientName || [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
 
+        if (!window) {
+          return;
+        }
         window.addEventListener('message', (event) => {
             if (!event.data || event.data.channel !== this.#channel) {
                 return;
@@ -34,6 +37,9 @@ class IframeSyncClient {
      * Notify the parent window that this client is ready to receive state updates.
      */
     ready() {
+        if (!window || !window.parent) {
+          return;
+        }
         window.parent.postMessage({
             channel: this.#channel,
             type: 'ready',
@@ -47,6 +53,9 @@ class IframeSyncClient {
      * @param {Object} update - The state update to send.
      */
     stateChange(update) {
+        if (!window || !window.parent) {
+          return;
+        }
         window.parent.postMessage({
             channel: this.#channel,
             type: 'stateChange',
@@ -72,6 +81,9 @@ class IframeSyncBroker {
         this.#state = null; // State is null until the first updateState message arrives
         this.#clientIframes = new Set();
 
+        if (!window) {
+          return;
+        }
         window.addEventListener('message', (event) => this.#handleMessage(event));
     }
 
