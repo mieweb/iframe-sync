@@ -34,7 +34,8 @@ The IframeSyncClient class is used by browser windows or IFrames that want to pa
 import { IframeSyncClient } from 'iframe-sync';
 
 const client = new IframeSyncClient('client1', (state, isOwnMessage, isReadyResponse) => {
-    console.log('Received state update:', state, 'Is own message:', isOwnMessage, 'Is ready response', isReadyResponse);
+    console.log('Received state update:', state, 'Is own message:', isOwnMessage,
+        'Is ready response', isReadyResponse);
 });
 
 client.ready();
