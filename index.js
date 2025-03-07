@@ -26,9 +26,10 @@ class IframeSyncClient {
             }
 
             const isOwnMessage = event.data.sourceClientName === this.#clientName;
+            const isReadyReceived = event.data.type === 'readyReceived';
 
-            if (event.data.type === 'syncState' && typeof this.#recv === 'function') {
-                this.#recv(event.data.payload, isOwnMessage);
+            if (['syncState', 'readyReceived'].includes(event.data.type) && typeof this.#recv === 'function') {
+                this.#recv(event.data.payload, isOwnMessage, isReadyReceived);
             }
         });
     }
@@ -78,7 +79,7 @@ class IframeSyncBroker {
      */
     constructor() {
         this.#channel = 'IframeSync';
-        this.#state = null; // State is null until the first updateState message arrives
+        this.#state = {};
         this.#clientIframes = new Set();
 
         if (!window) {
@@ -100,9 +101,7 @@ class IframeSyncBroker {
 
         if (data.type === 'ready') {
             this.#clientIframes.add(clientIframe);
-            if (this.#state !== null) { // Only send sync state if there is some state to send
-                this.#sendSyncState(clientIframe);
-            }
+            this.#sendReadyReceived(clientIframe);
         } else if (data.type === 'stateChange' && data.payload) {
             this.#updateState(data.payload, data.sourceClientName);
         }
@@ -115,10 +114,6 @@ class IframeSyncBroker {
      * @private
      */
     #updateState(update, sourceClientName) {
-        if (this.#state === null) {
-            this.#state = {}; // Initialize state if it is null
-        }
-
         const prevState = JSON.stringify(this.#state);
         Object.assign(this.#state, update);
         const newState = JSON.stringify(this.#state);
@@ -141,7 +136,23 @@ class IframeSyncBroker {
                 channel: this.#channel,
                 type: 'syncState',
                 sourceClientName: sourceClientName, // Pass through the source
-                payload: this.#state
+                payload: this.#state,
+            }, '*');
+        }
+    }
+
+    /**
+     * Send the current state to a specific client iframe.
+     * @param {Window} clientIframe - The client iframe to send the state to.
+     * @param {string} sourceClientName - The name of the client that requested the state.
+     * @private
+     */
+    #sendReadyReceived(clientIframe) {
+        if (clientIframe && typeof clientIframe.postMessage === 'function') {
+            clientIframe.postMessage({
+                channel: this.#channel,
+                type: 'readyReceived',
+                payload: this.#state,
             }, '*');
         }
     }
