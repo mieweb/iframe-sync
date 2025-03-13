@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Iframe Sync</title>
+    <script src="iframe-sync.js"></script>
+</head>
+<body>
+
+    <h1>Advanced Iframe Sync System</h1>
+
+    <label>Send a Message:</label>
+    <input type="text" id="messageBox" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Sync Message</button>
+
+    <label>Change Theme Color:</label>
+    <input type="color" id="colorPicker" onchange="changeTheme()" />
+
+    <button onclick="addIframe()">➕ Add New Iframe</button>
+
+    <div id="iframes-container">
+        <iframe src="iframe.html" width="400" height="250"></iframe>
+        <iframe src="iframe.html" width="400" height="250"></iframe>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("Initializing broker...");
+            window.broker = new IframeSyncBroker();
+        });
+
+        function sendMessage() {
+            const message = document.getElementById("messageBox").value;
+            window.broker.stateChange({ message });
+        }
+
+        function changeTheme() {
+            const color = document.getElementById("colorPicker").value;
+            window.broker.stateChange({ themeColor: color });
+        }
+
+        function addIframe() {
+            const container = document.getElementById("iframes-container");
+            const newIframe = document.createElement("iframe");
+            newIframe.src = "iframe.html";
+            newIframe.width = "400";
+            newIframe.height = "250";
+            container.appendChild(newIframe);
+        }
+    </script>
+
+</body>
+</html>
