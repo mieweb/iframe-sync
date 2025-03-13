@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iframe Client</title>
+</head>
+<body>
+
+    <h2>Iframe Client</h2>
+    <label>Send a Message:</label>
+    <input type="text" id="iframeMessageBox" placeholder="Type message from iframe..." />
+    <button onclick="sendMessageFromIframe()">Send</button>
+
+    <h2>Received Message</h2>
+    <input type="text" id="receivedMessage" readonly style="width: 100%;" />
+
+    <script src="iframe-sync.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("Initializing client...");
+            const client = new IframeSyncClient("TestClient", (state) => {
+                if (state.message) {
+                    document.getElementById("receivedMessage").value = state.message;
+                }
+                if (state.themeColor) {
+                    document.body.style.backgroundColor = state.themeColor;
+                }
+            });
+
+            client.ready();
+
+            window.sendMessageFromIframe = function() {
+                const message = document.getElementById("iframeMessageBox").value;
+                client.stateChange({ message: `Iframe: ${message}` });
+            };
+        });
+    </script>
+
+</body>
+</html>
