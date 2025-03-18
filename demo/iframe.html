@@ -3,39 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iframe Client</title>
+    <title>Iframe</title>
+    <script src="https://cdn.jsdelivr.net/npm/iframe-sync@latest/index.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 90%;
+            margin: 5px auto;
+        }
+
+        .input-group label {
+            width: 40%;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 55%;
+            padding: 5px;
+            font-size: 16px;
+        }
+
+        #ticTacToe {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-gap: 5px;
+            margin: 20px auto;
+            width: 190px;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            text-align: center;
+            line-height: 60px;
+            border: 1px solid #333;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        #iframeWhiteboard {
+            width: 90%;
+            height: 50px;
+            resize: both;
+            overflow: auto;
+        }
+
+        .winner {
+            background-color: #90EE90 !important; /* Highlight winning cells */
+        }
+    </style>
 </head>
 <body>
+    <h2>Iframe</h2>
+    <textarea id="iframeWhiteboard" placeholder="Shared White Board"></textarea>
 
-    <h2>Iframe Client</h2>
-    <label>Send a Message:</label>
-    <input type="text" id="iframeMessageBox" placeholder="Type message from iframe..." />
-    <button onclick="sendMessageFromIframe()">Send</button>
+    <h3>Tic-Tac-Toe</h3>
+    <div id="ticTacToe">
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    </div>
 
-    <h2>Received Message</h2>
-    <input type="text" id="receivedMessage" readonly style="width: 100%;" />
+    <div class="input-group">
+        <label for="usernameField">Username:</label>
+        <input type="text" id="usernameField" placeholder="Enter username">
+    </div>
 
-    <script src="iframe-sync.js"></script>
+    <div class="input-group">
+        <label for="ageField">Age:</label>
+        <input type="number" id="ageField" placeholder="Enter age">
+    </div>
+
+    <div class="input-group">
+        <label for="countryField">Country:</label>
+        <select id="countryField">
+            <option value="USA">USA</option>
+            <option value="India">India</option>
+            <option value="UK">UK</option>
+            <option value="Canada">Canada</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label for="termsCheckbox">Accept Terms:</label>
+        <input type="checkbox" id="termsCheckbox">
+    </div>
+
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            console.log("Initializing client...");
-            const client = new IframeSyncClient("TestClient", (state) => {
-                if (state.message) {
-                    document.getElementById("receivedMessage").value = state.message;
+        let gameState = Array(9).fill(null);
+        const whiteboard = document.getElementById("iframeWhiteboard");
+
+        const winningCombinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]  // Diagonals
+        ];
+
+        const checkWinner = () => {
+            for (let combination of winningCombinations) {
+                const [a, b, c] = combination;
+                if (gameState[a] && gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
+                    return gameState[a]; // Returns "X" or "O"
                 }
-                if (state.themeColor) {
-                    document.body.style.backgroundColor = state.themeColor;
+            }
+            return null;
+        };
+
+        const highlightWinningCells = (winner) => {
+            winningCombinations.forEach(combination => {
+                const [a, b, c] = combination;
+                if (gameState[a] === winner && gameState[b] === winner && gameState[c] === winner) {
+                    document.querySelectorAll(".cell")[a].classList.add("winner");
+                    document.querySelectorAll(".cell")[b].classList.add("winner");
+                    document.querySelectorAll(".cell")[c].classList.add("winner");
                 }
             });
+        };
 
-            client.ready();
+        window.client = new IframeSyncClient("parent-client", (state) => {
+            if (state.whiteboardText) whiteboard.value = state.whiteboardText;
+            if (state.username) document.getElementById("usernameField").value = state.username;
+            if (state.age) document.getElementById("ageField").value = state.age;
+            if (state.country) document.getElementById("countryField").value = state.country;
+            if (state.termsChecked !== undefined) document.getElementById("termsCheckbox").checked = state.termsChecked;
 
-            window.sendMessageFromIframe = function() {
-                const message = document.getElementById("iframeMessageBox").value;
-                client.stateChange({ message: `Iframe: ${message}` });
-            };
+            if (state.gameState) {
+                gameState = state.gameState;
+                document.querySelectorAll(".cell").forEach((cell, index) => {
+                    cell.innerHTML = gameState[index] || "";
+                });
+                let winner = checkWinner();
+                if (winner) highlightWinningCells(winner);
+            }
+
+            if (state.whiteboardSize) {
+                whiteboard.style.width = state.whiteboardSize.width;
+                whiteboard.style.height = state.whiteboardSize.height;
+            }
         });
-    </script>
 
+        window.client.ready();
+
+        const sendResizeState = () => {
+            const dimensions = {
+                width: whiteboard.style.width || `${whiteboard.offsetWidth}px`,
+                height: whiteboard.style.height || `${whiteboard.offsetHeight}px`
+            };
+            window.client.stateChange({ whiteboardSize: dimensions });
+        };
+
+        const observer = new ResizeObserver(() => sendResizeState());
+        observer.observe(whiteboard);
+
+        document.getElementById("iframeWhiteboard").addEventListener("input", (event) => {
+            window.client.stateChange({ whiteboardText: event.target.value });
+        });
+
+        document.querySelectorAll(".cell").forEach((cell, index) => {
+            cell.addEventListener("click", (event) => {
+                if (gameState[index] || checkWinner()) return;
+
+                let ticOrTac = localStorage.getItem("ticOrTac") || "X";
+                event.target.innerHTML = ticOrTac;
+                gameState[index] = ticOrTac;
+
+                let winner = checkWinner();
+                if (winner) {
+                    highlightWinningCells(winner);
+                }
+
+                window.client.stateChange({ gameState: gameState });
+                localStorage.setItem("ticOrTac", ticOrTac === "X" ? "O" : "X");
+            });
+        });
+
+        document.getElementById("usernameField").addEventListener("input", (event) => {
+            window.client.stateChange({ username: event.target.value });
+        });
+
+        document.getElementById("ageField").addEventListener("input", (event) => {
+            window.client.stateChange({ age: event.target.value });
+        });
+
+        document.getElementById("countryField").addEventListener("change", (event) => {
+            window.client.stateChange({ country: event.target.value });
+        });
+
+        document.getElementById("termsCheckbox").addEventListener("change", (event) => {
+            window.client.stateChange({ termsChecked: event.target.checked });
+        });
+
+    </script>
 </body>
 </html>

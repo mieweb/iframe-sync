@@ -3,52 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Iframe Sync</title>
-    <script src="iframe-sync.js"></script>
+    <title>Iframe Sync Playground</title>
+    <script src="https://cdn.jsdelivr.net/npm/iframe-sync@latest/index.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        button {
+            margin: 10px;
+            padding: 10px;
+            cursor: pointer;
+            border: none;
+            background: #007BFF;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #iframeContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        iframe {
+            width: 450px;
+            height: 450px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: white;
+        }
+        #sharedWhiteboard {
+            width: 90%;
+            height: 50px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px auto;
+            display: block;
+        }
+    </style>
 </head>
 <body>
+    <h1>Iframe Sync Playground </h1>
 
-    <h1>Advanced Iframe Sync System</h1>
+    <!-- Shared Whiteboard (Collaborative Editing) -->
+    <textarea id="sharedWhiteboard" placeholder="Write something..."></textarea>
 
-    <label>Send a Message:</label>
-    <input type="text" id="messageBox" placeholder="Type a message..." />
-    <button onclick="sendMessage()">Sync Message</button>
+    <button id="addIframeBtn">Add Iframe</button>
 
-    <label>Change Theme Color:</label>
-    <input type="color" id="colorPicker" onchange="changeTheme()" />
-
-    <button onclick="addIframe()">➕ Add New Iframe</button>
-
-    <div id="iframes-container">
-        <iframe src="iframe.html" width="400" height="250"></iframe>
-        <iframe src="iframe.html" width="400" height="250"></iframe>
+    <div id="iframeContainer">
+        <iframe class="sync-iframe" src="iframe.html"></iframe>
+        <iframe class="sync-iframe" src="iframe.html"></iframe>
     </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            console.log("Initializing broker...");
-            window.broker = new IframeSyncBroker();
+            console.log("Initializing IframeSyncBroker...");
+            new IframeSyncBroker();
+
+            // Shared Game State
+            let gameState = Array(9).fill(0); // Board starts empty
+            let currentPlayer = "X"; // X always starts
+
+            window.client = new IframeSyncClient("parent-client", (state) => {
+                if (state.whiteboardText) {
+                    document.getElementById("sharedWhiteboard").value = state.whiteboardText;
+                }
+                if (state.gameState) {
+                    gameState = state.gameState;
+                }
+                if (state.currentPlayer) {
+                    currentPlayer = state.currentPlayer;
+                }
+            });
+            
+            localStorage.setItem("ticOrTac", "X");
+
+            window.client.ready();
+
+            document.getElementById("sharedWhiteboard").addEventListener("input", (event) => {
+                window.client.stateChange({ whiteboardText: event.target.value });
+            });
+
+            document.getElementById("addIframeBtn").addEventListener("click", () => {
+                const iframe = document.createElement("iframe");
+                iframe.className = "sync-iframe";
+                iframe.src = "iframe.html";
+                document.getElementById("iframeContainer").appendChild(iframe);
+                
+            });
         });
-
-        function sendMessage() {
-            const message = document.getElementById("messageBox").value;
-            window.broker.stateChange({ message });
-        }
-
-        function changeTheme() {
-            const color = document.getElementById("colorPicker").value;
-            window.broker.stateChange({ themeColor: color });
-        }
-
-        function addIframe() {
-            const container = document.getElementById("iframes-container");
-            const newIframe = document.createElement("iframe");
-            newIframe.src = "iframe.html";
-            newIframe.width = "400";
-            newIframe.height = "250";
-            container.appendChild(newIframe);
-        }
     </script>
-
 </body>
 </html>
