@@ -1,6 +1,6 @@
 {
   "name": "iframe-sync",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Simple state synchronization between related IFrames",
   "main": "index.js",
   "scripts": {

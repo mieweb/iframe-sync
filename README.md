@@ -67,13 +67,17 @@ const broker = new IframeSyncBroker();
   * `clientName` (string, optional): A unique client name. If not provided, one will be generated randomly.
   * `recv` (function): A callback function to receive the full state when updates are sent.
   * `ready()`: Notify the broker that this client is ready to receive state updates.
-  * `stateChange(update)`: Send a state update to the broker, which will broadcast it to all other clients.
-    * `update` (Object): The state update to send.
+* `stateChange(update)`: Send a state update to the broker, which will broadcast it to all other clients.
+  * `update` (Object): The state update to send.
 
 **IframeSyncBroker**
 
 * `new IframeSyncBroker()`: Create a new IframeSyncBroker instance
-
+* `setDebugMode(mode)`: Enable debug when the state changes
+  * false (default): no debug
+  * true: console.log
+  * function: call the function, pass it the old state and new state
+  * HTML element: set the text of an element
 
 ## License
 This project is licensed under the MIT License.

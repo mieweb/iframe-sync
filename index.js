@@ -73,6 +73,7 @@ class IframeSyncBroker {
     #channel;
     #state;
     #clientIframes;
+    #debugMode;
 
     /**
      * Create an IframeSyncBroker.
@@ -81,6 +82,7 @@ class IframeSyncBroker {
         this.#channel = 'IframeSync';
         this.#state = {};
         this.#clientIframes = new Set();
+        this.#debugMode = false;
 
         if (!window) {
           return;
@@ -119,7 +121,7 @@ class IframeSyncBroker {
         const newState = JSON.stringify(this.#state);
 
         if (prevState !== newState) {
-            console.log('State updated:', prevState, newState);
+            this.#debug();
             this.#broadcastState(sourceClientName);
         }
     }
@@ -166,6 +168,37 @@ class IframeSyncBroker {
         this.#clientIframes.forEach((clientIframe) =>
             this.#sendSyncState(clientIframe, sourceClientName)
         );
+    }
+
+    /**
+     * Log a debug message.
+     * @private
+     */
+    #debug() {
+        if (this.#debugMode === false) {
+            return; // noop by default
+        }
+
+        const stateJson = JSON.stringify(this.#state, null, 2);
+        if (this.#debugMode === true) {
+            console.log('IframeSyncBroker state change', stateJson);
+        } else if (typeof this.#debugMode === 'function') {
+            this.#debugMode(stateJson);
+        } else if (this.#debugMode instanceof HTMLElement) {
+            this.#debugMode.innerText = stateJson;
+        }
+    }
+
+    /**
+     * Control debug behavior.
+     * @param {boolean|Function|HTMLElement} mode - The debug mode.
+     *   * false (default): no debug
+     *   * true: console.log
+     *   * function: call a provided function
+     *   * HTML element: set the text of an element
+     */
+    setDebugMode(mode) {
+        this.#debugMode = mode;
     }
 }
 
