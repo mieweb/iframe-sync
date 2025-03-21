@@ -1,170 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iframe Sync Playground</title>
-    <script src="https://cdn.jsdelivr.net/npm/iframe-sync@latest/index.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f4;
-        }
-        button {
-            margin: 10px;
-            padding: 10px;
-            cursor: pointer;
-            border: none;
-            background: #007BFF;
-            color: white;
-            font-size: 16px;
-            border-radius: 5px;
-        }
-        select {
-            margin: 10px;
-            padding: 10px;
-            cursor: pointer;
-            border: 2px solid #007BFF;
-            background: #f4f4f4;
-            color: #007BFF;
-            font-size: 16px;
-            border-radius: 5px;
-        }
-        select:hover {
-            background: #e0e0e0;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        #iframeContainer {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        iframe {
-            width: 450px;
-            height: 450px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            background: white;
-        }
-        #sharedWhiteboard {
-            width: 90%;
-            height: 50px;
-            font-size: 18px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin: 10px auto;
-            display: block;
-        }
-        #debugOutput {
-            margin-top: 15px;
-            display: none;
-            background-color: #bbb;
-            border-radius: 8px;
-            width: 50%;
-            height: 200px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin: 10px auto;
-            overflow-y: scroll;
-            font-family: monospace;
-            white-space: pre;
-            text-align: left;
-        }
-        #debugOutput.active {
-            display: block;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Iframe Sync Playground</title>
+
+  <!-- Prism.js for Syntax Highlighting in the Example Code sidebar -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+
+  <!-- Iframe Sync API -->
+  <script src="https://cdn.jsdelivr.net/npm/iframe-sync@1.0.4/index.min.js"></script>
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
-    <h1>Iframe Sync Playground </h1>
+  <h1>Iframe Sync Playground</h1>
+  <p>
+    Unlike Pub-Sub, which broadcasts messages to a topic, this approach syncs a shared state object across all iframes, ensuring consistency.
+  </p>
 
-    <!-- Shared Whiteboard (Collaborative Editing) -->
-    <textarea id="sharedWhiteboard" placeholder="Write something..."></textarea>
+  <!-- Shared Whiteboard -->
+  <textarea id="sharedWhiteboard" placeholder="Write something..."></textarea>
 
-    <button id="addIframeBtn">Add Iframe</button>
+  <button id="addIframeBtn">Add Iframe</button>
 
-    <select id="debugMode">
-        <option value="none">No Debug Output</option>
-        <option value="console">Console</option>
-        <option value="function">Function</option>
-        <option value="element">Element</option>
-    </select>
+  <!-- Debug Mode Dropdown -->
+  <select id="debugMode">
+    <option value="none">Disable Debug</option>
+    <option value="element">Show State in the Page</option>
+    <option value="console">Show in Console</option>
+    <option value="function">Custom Debug function</option>
 
-    <div id="iframeContainer">
-        <iframe class="sync-iframe" src="iframe.html"></iframe>
-        <iframe class="sync-iframe" src="iframe.html"></iframe>
-    </div>
+  </select>
 
-    <div id="debugOutput"></div>
+  <div id="iframeContainer">
+    <iframe class="sync-iframe" src="iframe.html"></iframe>
+    <iframe class="sync-iframe" src="iframe.html"></iframe>
+  </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            console.log("Initializing IframeSyncBroker...");
-            const broker = new IframeSyncBroker();
+  <!-- Example Code Sidebar -->
+  <div id="exampleSidebar" class="sidebar">
+    <button id="closeExampleBtn" class="closeBtn">X</button>
+    <h2>Example Code</h2>
 
-            // Shared Game State
-            let gameState = Array(9).fill(0); // Board starts empty
-            let currentPlayer = "X"; // X always starts
+<h3>Parent Page (index.html)</h3>
+<pre class="code-block"><code class="language-javascript">
+&lt;script&gt;
+  // Initialize the broker
+  const broker = new IframeSyncBroker();
 
-            window.client = new IframeSyncClient("parent-client", (state) => {
-                if (state.whiteboardText) {
-                    document.getElementById("sharedWhiteboard").value = state.whiteboardText;
-                }
-                if (state.gameState) {
-                    gameState = state.gameState;
-                }
-                if (state.currentPlayer) {
-                    currentPlayer = state.currentPlayer;
-                }
-            });
-            
-            localStorage.setItem("ticOrTac", "X");
+  // Listen for changes on the shared whiteboard and send them to the broker
+  document.getElementById("sharedWhiteboard").addEventListener("input", (event) =&gt; {
+    window.client.stateChange({ whiteboardText: event.target.value });
+  });
+&lt;/script&gt;
+</code></pre>
 
-            window.client.ready();
+<h3>Client Page (iframe.html)</h3>
+<pre class="code-block"><code class="language-javascript">
+// Create an IframeSyncClient that listens for shared whiteboard updates
+const client = new IframeSyncClient("myClient", (state) =&gt; {
+  if (state.whiteboardText !== undefined) {
+    document.getElementById("sharedWhiteboard").value = state.whiteboardText;
+  }
+});
+client.ready();
 
-            document.getElementById("sharedWhiteboard").addEventListener("input", (event) => {
-                window.client.stateChange({ whiteboardText: event.target.value });
-            });
+// Send local whiteboard changes to the broker
+document.getElementById("sharedWhiteboard").addEventListener("input", (event) =&gt; {
+  client.stateChange({ whiteboardText: event.target.value });
+});
+</code></pre>
 
-            document.getElementById("addIframeBtn").addEventListener("click", () => {
-                const iframe = document.createElement("iframe");
-                iframe.className = "sync-iframe";
-                iframe.src = "iframe.html";
-                document.getElementById("iframeContainer").appendChild(iframe);
-                
-            });
+<h3>How It Works</h3>
+<div class="explanation">
+  <ul>
+    <li>The parent page creates an <code>IframeSyncBroker</code> to manage state synchronization.</li>
+    <li>It listens for input on the shared whiteboard and sends updates via <code>stateChange</code>.</li>
+    <li>The client page creates an <code>IframeSyncClient</code> that registers a callback to update its own whiteboard when the state changes.</li>
+    <li>When a user types in the whiteboard in any instance, the change is broadcast to all clients, keeping them in sync.</li>
+  </ul>
+</div>
 
-            document.getElementById("debugMode").addEventListener("change", (event) => {
-                const debugEle = document.getElementById('debugOutput');
+  </div>
+  <div id="exampleHandle" class="handle">Example Code</div>
 
-                debugEle.innerHTML = '';
-                debugEle.classList.remove('active');
+  <!-- Draggable Debug Popup -->
+  <div id="debugPopup">
+    <div id="debugPopupHeader">Debug Output</div>
+    <pre id="debugOutput"></pre>
+  </div>
 
-                switch (event.target.value) {
-                    case 'none':
-                        broker.setDebugMode(false);
-                        break;
-                    case 'console':
-                        broker.setDebugMode(true);
-                        break;
-                    case 'function':
-                        broker.setDebugMode((stateJson) => {
-                            console.warn('Custom callback that just calls console.warn', stateJson);
-                        });
-                        break;
-                    case 'element':
-                        broker.setDebugMode(debugEle);
-                        debugEle.classList.add('active');
-                        break;
-                }
-            });
-        });
-    </script>
+
+  <!-- API-related code inline -->
+  <script>
+    // API Code: Create a client for the shared whiteboard.
+    
+      // Initialize the broker for UI functions (if needed)
+    const broker = new IframeSyncBroker();
+    const client = new IframeSyncClient("myClient", (state) => {
+      if (state.whiteboardText !== undefined) {
+        document.getElementById("sharedWhiteboard").value = state.whiteboardText;
+      }
+    });
+    client.ready();
+    document.getElementById("sharedWhiteboard").addEventListener("input", (event) => {
+      client.stateChange({ whiteboardText: event.target.value });
+    });
+
+
+
+  </script>
+
+
+  <script src="ui.js"></script>
 </body>
 </html>
